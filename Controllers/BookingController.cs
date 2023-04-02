@@ -41,6 +41,7 @@ namespace BookStoreMVC.Controllers
             {
                 string uri = "https://localhost:7209/api/Book";
                 Book book=new Book();
+                book.name = collection["name"];
                 book.title = collection["title"];
                 book.description = collection["description"];
                 book.author= collection["description"];
@@ -81,7 +82,7 @@ namespace BookStoreMVC.Controllers
         {
             var uri = "https://localhost:7209/api/Book/"+id;
             new BookDLL().deleteBookHttpClient(uri);
-            return RedirectToAction("index");
+            return Redirect("/booking/index");
         }
 
         // POST: BookingController/Delete/5
