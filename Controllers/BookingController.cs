@@ -1,23 +1,30 @@
-﻿using BookStoreMVC.DLLs;
+﻿using BookStoreMVC.Areas.Identity.Data;
+using BookStoreMVC.DLLs;
 using BookStoreMVC.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
 using System;
 using System.Net.Http;
+using System.Security.Claims;
 using System.Security.Policy;
 using System.Threading.Tasks;
 
 namespace BookStoreMVC.Controllers
 {
+    [Authorize]
     public class BookingController : Controller
     {
+        private readonly string _uri = "https://localhost:7209/api/Book";
+        private object _userManager;
+
         // GET: BookingController
         public async Task<ActionResult> Index()
         {
-            var uri = "https://localhost:7209/api/Book";
-            var response = await new BookDLL().getBookHttpClient(uri);
-           return View(response);
+            var response = await new BookDLL().getBookHttpClient(_uri);
+            return View(response);
         }
 
         // GET: BookingController/Details/5
@@ -39,14 +46,13 @@ namespace BookStoreMVC.Controllers
         {
             try
             {
-                string uri = "https://localhost:7209/api/Book";
-                Book book=new Book();
+                Book book = new Book();
                 book.name = collection["name"];
                 book.title = collection["title"];
                 book.description = collection["description"];
-                book.author= collection["description"];
+                book.author = collection["description"];
                 book.quantity = Convert.ToInt32(collection["quantity"]);
-                var response = await new BookDLL().createBookHttpClient(book, uri);
+                var response = await new BookDLL().createBookHttpClient(book, _uri);
 
                 return RedirectToAction(nameof(Index));
             }
@@ -59,6 +65,7 @@ namespace BookStoreMVC.Controllers
         // GET: BookingController/Edit/5
         public ActionResult Edit(int id)
         {
+
             return View();
         }
 
@@ -80,8 +87,7 @@ namespace BookStoreMVC.Controllers
         // GET: BookingController/Delete/5
         public ActionResult Delete(Guid id)
         {
-            var uri = "https://localhost:7209/api/Book/"+id;
-            new BookDLL().deleteBookHttpClient(uri);
+            new BookDLL().deleteBookHttpClient(_uri + "/" + id);
             return Redirect("/booking/index");
         }
 
@@ -99,5 +105,17 @@ namespace BookStoreMVC.Controllers
                 return View();
             }
         }
+
+        public async Task<ActionResult> BookIt(Guid id)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); // will give the user's userId
+
+            // For ASP.NET Core >= 5.0
+            var userEmail = User.FindFirstValue(ClaimTypes.Email); // will give the user's Email
+
+            await new BookDLL().BookItHttpClient(_uri, id);
+            return Redirect("/booking/index");
+        }
+
     }
 }
