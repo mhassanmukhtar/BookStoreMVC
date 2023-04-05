@@ -17,13 +17,14 @@ namespace BookStoreMVC.Controllers
     [Authorize]
     public class BookingController : Controller
     {
-        private readonly string _uri = "https://localhost:7209/api/Book";
+        private readonly string _bookUri = "https://localhost:7209/api/Book";
+        private readonly string uri = "https://localhost:7209/api/BookingAPI";
         private object _userManager;
 
         // GET: BookingController
         public async Task<ActionResult> Index()
         {
-            var response = await new BookDLL().getBookHttpClient(_uri);
+            var response = await new BookingDLL().getBookingsHttpClient(uri);
             return View(response);
         }
 
@@ -33,28 +34,35 @@ namespace BookStoreMVC.Controllers
             return View();
         }
 
-        // GET: BookingController/Create
-        public ActionResult Create()
-        {
-            return View();
-        }
+        //// GET: BookingController/Create
+        //public ActionResult Create()
+        //{
+        //    return View();
+        //}
 
-        // POST: BookingController/Create
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<ActionResult> Create(IFormCollection collection)
+        //// POST: BookingController/Create
+        //[HttpPost]
+        //[ValidateAntiForgeryToken]
+        public async Task<ActionResult> Create(Guid id)
         {
             try
             {
-                Book book = new Book();
-                book.name = collection["name"];
-                book.title = collection["title"];
-                book.description = collection["description"];
-                book.author = collection["description"];
-                book.quantity = Convert.ToInt32(collection["quantity"]);
-                var response = await new BookDLL().createBookHttpClient(book, _uri);
+                string bookUri = _bookUri + "/" + id;
+                Book book = await new BookDLL().getBookByIDHttpClient(bookUri);
 
-                return RedirectToAction(nameof(Index));
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); // will give the user's userId
+                var userEmail = User.FindFirstValue(ClaimTypes.Email); // will give the user's Email
+
+                Booking booking = new Booking();
+                booking.CustomerID = new Guid(userId);
+                booking.CustomerName = userEmail;
+                booking.BookingDate = DateTime.Now;
+                booking.BookID = book.Id;
+                booking.BookName = book.name;
+
+                await new BookingDLL().CreateBooking(booking,uri);
+
+                return Redirect("/book/index");
             }
             catch
             {
@@ -87,7 +95,7 @@ namespace BookStoreMVC.Controllers
         // GET: BookingController/Delete/5
         public ActionResult Delete(Guid id)
         {
-            new BookDLL().deleteBookHttpClient(_uri + "/" + id);
+        
             return Redirect("/booking/index");
         }
 
@@ -106,16 +114,7 @@ namespace BookStoreMVC.Controllers
             }
         }
 
-        public async Task<ActionResult> BookIt(Guid id)
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier); // will give the user's userId
-
-            // For ASP.NET Core >= 5.0
-            var userEmail = User.FindFirstValue(ClaimTypes.Email); // will give the user's Email
-
-            await new BookDLL().BookItHttpClient(_uri, id);
-            return Redirect("/booking/index");
-        }
+        
 
     }
 }
